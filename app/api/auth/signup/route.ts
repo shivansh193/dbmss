@@ -13,7 +13,7 @@ export async function POST(req: NextRequest) {
         return new NextResponse('Missing fields for customer', { status: 400 });
       }
       const hashedPassword = await bcrypt.hash(password, 10);
-      await prisma.customer.create({
+      const created = await prisma.customer.create({
         data: {
           name,
           email,
@@ -21,24 +21,61 @@ export async function POST(req: NextRequest) {
           contactInfo: contactInfo || undefined,
         },
       });
-      return new NextResponse('Signup successful', { status: 200 });
+      // Set cookie
+      const cookie = `auth_user=${JSON.stringify({ id: created.id, role: 'customer' })}; Path=/; SameSite=Lax;`;
+      const response = new NextResponse('Signup successful', { status: 200 });
+      response.headers.set('Set-Cookie', cookie);
+      return response;
     } else if (role === 'vendor') {
       const { businessName, email, password, contactInfo, storeProfile } = body;
       if (!businessName || !email || !password) {
         return new NextResponse('Missing fields for vendor', { status: 400 });
       }
       const hashedPassword = await bcrypt.hash(password, 10);
-      await prisma.vendor.create({
-        data: {
-          businessName,
-          email,
-          password: hashedPassword,
-          contactInfo: contactInfo || undefined,
-          storeProfile: storeProfile || undefined,
-          registrationDate: new Date(),
-        },
-      });
-      return new NextResponse('Signup successful', { status: 200 });
+      try {
+        const created = await prisma.vendor.create({
+          data: {
+            businessName,
+            email,
+            password: hashedPassword,
+            contactInfo: contactInfo || undefined,
+            storeProfile: storeProfile || undefined,
+            registrationDate: new Date(),
+          },
+        });
+        // Set cookie
+        const cookie = `auth_user=${JSON.stringify({ id: created.id, role: 'vendor' })}; Path=/; SameSite=Lax;`;
+        const response = new NextResponse('Signup successful', { status: 200 });
+        response.headers.set('Set-Cookie', cookie);
+        return response;
+      } catch (vendorError: any) {
+        // Handle unique constraint error for vendor_id (sequence out of sync)
+        if (vendorError?.code === 'P2002' && vendorError?.meta?.target?.includes('vendor_id')) {
+          try {
+            await prisma.$executeRaw`SELECT setval(pg_get_serial_sequence('vendor', 'vendor_id'), (SELECT MAX(vendor_id) FROM vendor) + 1, false)`;
+            // Retry vendor creation
+            const created = await prisma.vendor.create({
+              data: {
+                businessName,
+                email,
+                password: hashedPassword,
+                contactInfo: contactInfo || undefined,
+                storeProfile: storeProfile || undefined,
+                registrationDate: new Date(),
+              },
+            });
+            const cookie = `auth_user=${JSON.stringify({ id: created.id, role: 'vendor' })}; Path=/; SameSite=Lax;`;
+            const response = new NextResponse('Signup successful (after sequence fix)', { status: 200 });
+            response.headers.set('Set-Cookie', cookie);
+            return response;
+          } catch (seqError) {
+            console.error('Failed to fix vendor_id sequence:', seqError);
+            return new NextResponse('Signup failed: could not fix vendor_id sequence', { status: 500 });
+          }
+        }
+        throw vendorError;
+      }
+    
     } else {
       return new NextResponse('Invalid role', { status: 400 });
     }

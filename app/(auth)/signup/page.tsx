@@ -56,7 +56,11 @@ export default function SignUp() {
         setError(msg || 'Signup failed');
         return;
       }
-      router.push('/dashboard');
+      if (role === 'vendor') {
+        router.push('/dashboard/vendor');
+      } else {
+        router.push('/dashboard/customer');
+      }
     } catch (err) {
       setError('Signup failed');
     }
@@ -78,14 +82,14 @@ export default function SignUp() {
         <form onSubmit={handleSignUp} className="mt-8 space-y-6">
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-900 mb-1">Role</label>
+              <label className="block text-sm font-extrabold text-blue-900 mb-1">Role</label>
               <div className="flex gap-4">
-                <label className="flex items-center gap-2">
-                  <input type="radio" name="role" value="customer" checked={role === 'customer'} onChange={() => setRole('customer')} />
+                <label className="flex items-center gap-2 font-semibold text-blue-900">
+                  <input type="radio" name="role" value="customer" checked={role === 'customer'} onChange={() => setRole('customer')} className="accent-blue-700 w-4 h-4" />
                   Customer
                 </label>
-                <label className="flex items-center gap-2">
-                  <input type="radio" name="role" value="vendor" checked={role === 'vendor'} onChange={() => setRole('vendor')} />
+                <label className="flex items-center gap-2 font-semibold text-purple-900">
+                  <input type="radio" name="role" value="vendor" checked={role === 'vendor'} onChange={() => setRole('vendor')} className="accent-purple-700 w-4 h-4" />
                   Vendor
                 </label>
               </div>
@@ -95,7 +99,7 @@ export default function SignUp() {
             {role === 'customer' && (
               <>
                 <div>
-                  <label htmlFor="name" className="block text-sm font-medium text-gray-900">
+                  <label htmlFor="name" className="block text-sm font-semibold text-blue-900">
                     Full Name
                   </label>
                   <div className="mt-1 relative">
@@ -109,13 +113,13 @@ export default function SignUp() {
                       required={role === 'customer'}
                       value={name}
                       onChange={(e) => setName(e.target.value)}
-                      className="pl-10 pr-3 py-2 border border-gray-300 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-900"
+                      className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 bg-white text-gray-900"
                       placeholder="Your full name"
                     />
                   </div>
                 </div>
                 <div>
-                  <label htmlFor="contactInfo" className="block text-sm font-medium text-gray-900">
+                  <label htmlFor="contactInfo" className="block text-sm font-semibold text-blue-900">
                     Contact Info (optional)
                   </label>
                   <input
@@ -135,7 +139,7 @@ export default function SignUp() {
             {role === 'vendor' && (
               <>
                 <div>
-                  <label htmlFor="businessName" className="block text-sm font-medium text-gray-900">
+                  <label htmlFor="businessName" className="block text-sm font-semibold text-purple-900">
                     Business Name
                   </label>
                   <input
@@ -150,7 +154,7 @@ export default function SignUp() {
                   />
                 </div>
                 <div>
-                  <label htmlFor="vendorContactInfo" className="block text-sm font-medium text-gray-900">
+                  <label htmlFor="vendorContactInfo" className="block text-sm font-semibold text-purple-900">
                     Contact Info (optional)
                   </label>
                   <input
@@ -164,7 +168,7 @@ export default function SignUp() {
                   />
                 </div>
                 <div>
-                  <label htmlFor="storeProfile" className="block text-sm font-medium text-gray-900">
+                  <label htmlFor="storeProfile" className="block text-sm font-semibold text-purple-900">
                     Store Profile (optional)
                   </label>
                   <textarea
@@ -180,12 +184,12 @@ export default function SignUp() {
             )}
 
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-900">
+              <label htmlFor="email" className="block text-sm font-bold text-blue-900">
                 Email address
               </label>
               <div className="mt-1 relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Mail className="h-5 w-5 text-gray-400" />
+                  <Mail className="h-5 w-5 text-blue-400" />
                 </div>
                 <input
                   id="email"
@@ -194,14 +198,14 @@ export default function SignUp() {
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                  className="block w-full pl-10 pr-3 py-2 border border-blue-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-700 bg-white text-gray-900 font-semibold shadow-md placeholder:text-blue-300"
                   placeholder="you@example.com"
                 />
               </div>
             </div>
 
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-900">
+              <label htmlFor="password" className="block text-sm font-bold text-blue-900">
                 Password
               </label>
               <div className="mt-1 relative">
@@ -215,7 +219,7 @@ export default function SignUp() {
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                  className="block w-full pl-10 pr-3 py-2 border border-blue-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-700 bg-white text-gray-900 shadow-sm"
                   placeholder="••••••••"
                 />
               </div>
@@ -228,7 +232,7 @@ export default function SignUp() {
           <div>
             <button
               type="submit"
-              className="w-full flex justify-center items-center px-4 py-2 border border-transparent rounded-lg shadow-sm text-white bg-[#1D4ED8] hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              className="w-full flex justify-center items-center px-4 py-2 border-none rounded-lg shadow-lg text-white bg-gradient-to-r from-blue-700 to-purple-700 font-bold hover:from-blue-800 hover:to-purple-800 focus:outline-none focus:ring-2 focus:ring-blue-700 transition-colors"
             >
               Create Account <ArrowRight className="ml-2 h-5 w-5" />
             </button>
@@ -247,7 +251,7 @@ export default function SignUp() {
             <div className="mt-6">
               <button
                 type="button"
-                className="w-full flex justify-center items-center px-4 py-2 border border-gray-300 rounded-lg shadow-sm bg-white text-gray-700 hover:bg-gray-50"
+                className="w-full flex justify-center items-center px-4 py-2 border-none rounded-lg shadow-lg bg-gradient-to-r from-red-500 to-yellow-400 text-white font-semibold hover:from-red-600 hover:to-yellow-500 focus:outline-none focus:ring-2 focus:ring-red-400 transition-colors"
                 onClick={handleGoogleLogin}
               >
                 <svg className="h-5 w-5 mr-2" viewBox="0 0 24 24">

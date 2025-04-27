@@ -9,12 +9,39 @@ export async function GET(req: NextRequest) {
   try {
     if (suggest) {
       const suggestions = await getCachedSearchSuggestions(q);
-      return NextResponse.json({ suggestions });
+      // Convert any BigInt in suggestions to string for JSON response
+      function convertBigIntToString(obj: any): any {
+        if (Array.isArray(obj)) return obj.map(convertBigIntToString);
+        if (obj && typeof obj === 'object') {
+          const out: any = {};
+          for (const k in obj) {
+            const v = obj[k];
+            out[k] = typeof v === 'bigint' ? v.toString() : convertBigIntToString(v);
+          }
+          return out;
+        }
+        return obj;
+      }
+      return NextResponse.json({ suggestions: convertBigIntToString(suggestions) });
     } else {
       const results = await getCachedSearchResults(q);
-      return NextResponse.json({ results });
+      // Convert any BigInt in results to string for JSON response
+      function convertBigIntToString(obj: any): any {
+        if (Array.isArray(obj)) return obj.map(convertBigIntToString);
+        if (obj && typeof obj === 'object') {
+          const out: any = {};
+          for (const k in obj) {
+            const v = obj[k];
+            out[k] = typeof v === 'bigint' ? v.toString() : convertBigIntToString(v);
+          }
+          return out;
+        }
+        return obj;
+      }
+      return NextResponse.json({ results: convertBigIntToString(results) });
     }
   } catch (error: any) {
+    console.error('Search API error:', error);
     return new NextResponse('Search failed', { status: 500 });
   }
 }

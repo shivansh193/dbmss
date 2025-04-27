@@ -28,23 +28,61 @@ export function useCart() {
 
 export function CartProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
+  const [customerId, setCustomerId] = useState<number|null>(null);
+
+  // On mount, fetch the logged-in user and set customerId
+  useEffect(() => {
+    async function fetchUser() {
+      const res = await fetch('/api/auth/me');
+      if (res.ok) {
+        const user = await res.json();
+        // Only set if role is customer
+        if (user && user.role === 'customer') {
+          setCustomerId(user.id);
+        } else {
+          setCustomerId(null);
+        }
+      } else {
+        setCustomerId(null);
+      }
+    }
+    fetchUser();
+  }, []);
+
+  // syncCartFromBackend is only declared here, not below
+  const syncCartFromBackend = async () => {
+    if (!customerId) return;
+    try {
+      const res = await fetch(`/api/cart?customerId=${customerId}`);
+      if (res.ok) {
+        const backendCart = await res.json();
+        if (backendCart && backendCart.cartItems) {
+          setItems(
+            backendCart.cartItems.map((ci: any) => ({
+              id: String(ci.productId),
+              name: ci.product?.name || '',
+              price: Number(ci.product?.price || 0),
+              imageUrl: ci.product?.imageUrl || ci.product?.image_url || '',
+              quantity: ci.quantity,
+            }))
+          );
+        }
+      }
+    } catch (e) {}
+  };
 
   useEffect(() => {
-    const stored = localStorage.getItem("cart");
-    if (stored) setItems(JSON.parse(stored));
-  }, []);
+    if (customerId) {
+      syncCartFromBackend();
+    }
+    // eslint-disable-next-line
+  }, [customerId]);
 
   useEffect(() => {
     localStorage.setItem("cart", JSON.stringify(items));
   }, [items]);
 
-  const [customerId, setCustomerId] = useState<number|null>(null);
-  useEffect(() => {
-    fetch('/api/auth/me')
-      .then(res => res.ok ? res.json() : null)
-      .then(user => setCustomerId(user?.id ?? null))
-      .catch(() => setCustomerId(null));
-  }, []);
+
 
   const addToCart = async (item: Omit<CartItem, "quantity">, quantity: number = 1) => {
     if (!customerId) return alert('You must be logged in to add to cart');
@@ -61,16 +99,39 @@ export function CartProvider({ children }: { children: ReactNode }) {
       await fetch('/api/cart', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ customerId, productId: Number(item.id), quantity })
+        body: JSON.stringify({ customerId: Number(customerId), productId: Number(item.id), quantity: Number(quantity) })
       });
+      await syncCartFromBackend();
     } catch (e) {
       // Optionally show error toast
     }
   };
 
-  const removeFromCart = (id: string) => setItems((prev) => prev.filter((i) => i.id !== id));
+  const removeFromCart = async (id: string) => {
+    setItems((prev) => prev.filter((i) => i.id !== id));
+    if (!customerId) return;
+    try {
+      await fetch('/api/cart', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ customerId: Number(customerId), productId: Number(id) })
+      });
+      await syncCartFromBackend();
+    } catch (e) {}
+  };
 
-  const updateQuantity = (id: string, quantity: number) => setItems((prev) => prev.map((i) => i.id === id ? { ...i, quantity } : i));
+  const updateQuantity = async (id: string, quantity: number) => {
+    setItems((prev) => prev.map((i) => i.id === id ? { ...i, quantity } : i));
+    if (!customerId) return;
+    try {
+      await fetch('/api/cart', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ customerId: Number(customerId), productId: Number(id), quantity: Number(quantity) })
+      });
+      await syncCartFromBackend();
+    } catch (e) {}
+  };
 
   const clearCart = async () => {
     if (!customerId) return alert('You must be logged in to checkout');

@@ -24,8 +24,11 @@ export async function POST(req: NextRequest) {
     if (!valid) {
       return new NextResponse('Invalid credentials', { status: 401 });
     }
-    // Here you would set a cookie/session/JWT as needed
-    return new NextResponse('Login successful', { status: 200 });
+    // Set a cookie with user id, email, and role (simple demo, not secure for production)
+    const cookie = `auth_user=${JSON.stringify({ id: user.id, email: user.email, role })}; Path=/; SameSite=Lax;`;
+    const response = new NextResponse('Login successful', { status: 200 });
+    response.headers.set('Set-Cookie', cookie);
+    return response;
   } catch (error: any) {
     // Handle unique constraint error for customer_id or vendor_id (sequence out of sync)
     if (role === 'customer' && error?.code === 'P2002' && error?.meta?.target?.includes('customer_id')) {

@@ -47,8 +47,9 @@ model Store {
   state           String                   @db.VarChar(100)
   postalCode      String                   @map("postal_code") @db.VarChar(20)
   country         String                   @db.VarChar(100)
-  location        Unsupported("geography")
-  operatingRadius Int                      @default(25000) @map("operating_radius")
+  latitude         Float?
+  longitude        Float?
+  operatingRadius  Int                      @default(25000) @map("operating_radius")
   products        Product[]
   vendor          Vendor                   @relation(fields: [vendorId], references: [id])
 
@@ -76,7 +77,7 @@ model Product {
 
 model Cart {
   id          Int        @id @default(autoincrement()) @map("cart_id")
-  customerId  Int        @map("customer_id")
+  customerId  Int        @unique @map("customer_id")
   createdDate DateTime   @default(now()) @map("created_date") @db.Date
   customer    Customer   @relation(fields: [customerId], references: [id])
   cartItems   CartItem[]
@@ -121,6 +122,14 @@ model OrderDetail {
 
   @@id([orderId, productId])
   @@map("order_detail")
+}
+
+model PopularSearch {
+  term         String   @id
+  count        Int      @default(1)
+  last_searched DateTime @default(now())
+
+  @@map("popular_searches")
 }
 
 model PlatformCommission {
